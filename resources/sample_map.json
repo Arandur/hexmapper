@@ -1,0 +1,15 @@
+{ 
+  "version": "0.0.1",
+  "hexes": [
+    { 
+      "coordinate": { "q": 0, "r": 0, "s": 0 }, 
+      "terrain": "mountain", 
+      "difficulty": "greater difficult" 
+    },
+    { 
+      "coordinate": { "q": 0, "r": 1, "s": -1 }, 
+      "terrain": "mountain", 
+      "difficulty": "difficult" 
+    }
+  ]
+}
