@@ -34,12 +34,9 @@ impl Sandbox for AppState {
   }
 
   fn view(&mut self) -> Element<Self::Message> {
-    let canvas = Canvas::new(HexCanvas {
-      hexes: &self.hexes,
-      selected: None,
-    })
-    .width(Length::Fill)
-    .height(Length::Fill);
+    let canvas = Canvas::new(HexCanvas::new(&self.hexes))
+      .width(Length::Fill)
+      .height(Length::Fill);
 
     Container::new(canvas)
       .width(Length::Fill)

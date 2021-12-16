@@ -1,4 +1,4 @@
-use iced::canvas::{event, Cursor, Event, Frame, Geometry, Path, Program, Stroke};
+use iced::canvas::{event, Cache, Cursor, Event, Geometry, Path, Program, Stroke};
 use iced::{mouse, Color, Rectangle, Vector};
 
 use crate::hex::{Hex, HexCoordinate};
@@ -6,8 +6,19 @@ use crate::hex::{Hex, HexCoordinate};
 use std::collections::HashMap;
 
 pub struct HexCanvas<'a> {
-  pub hexes: &'a HashMap<HexCoordinate, Hex>,
-  pub selected: Option<HexCoordinate>,
+  hexes: &'a HashMap<HexCoordinate, Hex>,
+  selected: Option<HexCoordinate>,
+  cache: Cache,
+}
+
+impl<'a> HexCanvas<'a> {
+  pub fn new(hexes: &'a HashMap<HexCoordinate, Hex>) -> HexCanvas {
+    HexCanvas {
+      hexes,
+      selected: None,
+      cache: Cache::new(),
+    }
+  }
 }
 
 impl<'a> Program<()> for HexCanvas<'a> {
@@ -63,6 +74,8 @@ impl<'a> Program<()> for HexCanvas<'a> {
           } else {
             self.selected = None;
           }
+
+          self.cache.clear();
         }
 
         (event::Status::Captured, None)
@@ -72,75 +85,73 @@ impl<'a> Program<()> for HexCanvas<'a> {
   }
 
   fn draw(&self, bounds: Rectangle, _cursor: Cursor) -> Vec<Geometry> {
-    let mut frame = Frame::new(bounds.size());
+    vec![self.cache.draw(bounds.size(), |frame| {
+      let center = frame.center();
+      let radius = frame.width().min(frame.height()) / 2.0;
 
-    let center = frame.center();
-    let radius = frame.width().min(frame.height()) / 2.0;
+      let hex_radius = radius / 10.0;
 
-    let hex_radius = radius / 10.0;
+      let hexes = Path::new(|builder| {
+        for coordinate in self.hexes.keys() {
+          let hex_center = center + coordinate.as_vector() * hex_radius;
 
-    let hexes = Path::new(|builder| {
-      for coordinate in self.hexes.keys() {
-        let hex_center = center + coordinate.as_vector() * hex_radius;
+          let mut vertices = (0..6).into_iter().map(|i| {
+            let (sin, cos) = f32::sin_cos(i as f32 * std::f32::consts::FRAC_PI_3);
 
-        let mut vertices = (0..6).into_iter().map(|i| {
-          let (sin, cos) = f32::sin_cos(i as f32 * std::f32::consts::FRAC_PI_3);
+            hex_center
+              + Vector {
+                x: hex_radius * cos,
+                y: hex_radius * sin,
+              }
+          });
 
-          hex_center
-            + Vector {
-              x: hex_radius * cos,
-              y: hex_radius * sin,
-            }
-        });
+          builder.move_to(vertices.next().unwrap());
 
-        builder.move_to(vertices.next().unwrap());
+          for vertex in vertices {
+            builder.line_to(vertex);
+          }
 
-        for vertex in vertices {
-          builder.line_to(vertex);
+          builder.close();
         }
+      });
 
-        builder.close();
-      }
-    });
-
-    let hex_stroke = Stroke {
-      color: Color::BLACK,
-      ..Default::default()
-    };
-
-    frame.stroke(&hexes, hex_stroke);
-
-    if let Some(coord) = self.selected {
-      let selected_hex_stroke = Stroke {
-        color: Color::new(1.0, 0.0, 0.0, 1.0),
+      let hex_stroke = Stroke {
+        color: Color::BLACK,
         ..Default::default()
       };
 
-      let path = Path::new(|builder| {
-        let hex_center = center + coord.as_vector() * hex_radius;
+      frame.stroke(&hexes, hex_stroke);
 
-        let mut vertices = (0..6).into_iter().map(|i| {
-          let (sin, cos) = f32::sin_cos(i as f32 * std::f32::consts::FRAC_PI_3);
+      if let Some(coord) = self.selected {
+        let selected_hex_stroke = Stroke {
+          color: Color::new(1.0, 0.0, 0.0, 1.0),
+          ..Default::default()
+        };
 
-          hex_center
-            + Vector {
-              x: hex_radius * cos,
-              y: hex_radius * sin,
-            }
+        let path = Path::new(|builder| {
+          let hex_center = center + coord.as_vector() * hex_radius;
+
+          let mut vertices = (0..6).into_iter().map(|i| {
+            let (sin, cos) = f32::sin_cos(i as f32 * std::f32::consts::FRAC_PI_3);
+
+            hex_center
+              + Vector {
+                x: hex_radius * cos,
+                y: hex_radius * sin,
+              }
+          });
+
+          builder.move_to(vertices.next().unwrap());
+
+          for vertex in vertices {
+            builder.line_to(vertex);
+          }
+
+          builder.close();
         });
 
-        builder.move_to(vertices.next().unwrap());
-
-        for vertex in vertices {
-          builder.line_to(vertex);
-        }
-
-        builder.close();
-      });
-
-      frame.stroke(&path, selected_hex_stroke);
-    }
-
-    vec![frame.into_geometry()]
+        frame.stroke(&path, selected_hex_stroke);
+      }
+    })]
   }
 }
