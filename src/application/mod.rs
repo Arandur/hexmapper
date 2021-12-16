@@ -24,7 +24,7 @@ impl Sandbox for AppState {
   }
 
   fn title(&self) -> String {
-    String::from("A cool application")
+    String::from("Hexmapper")
   }
 
   fn update(&mut self, _message: Self::Message) {
