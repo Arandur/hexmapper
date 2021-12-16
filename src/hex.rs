@@ -13,7 +13,7 @@ pub struct Hex {
   pub data: HashMap<String, Value>,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HexCoordinate {
   q: i64,
   r: i64,

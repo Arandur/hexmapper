@@ -34,6 +34,12 @@ impl SaveState {
   }
 
   pub fn into_application_state(self) -> AppState {
-    AppState { hexes: self.hexes }
+    AppState {
+      hexes: self
+        .hexes
+        .into_iter()
+        .map(|hex| (hex.coordinate, hex))
+        .collect(),
+    }
   }
 }

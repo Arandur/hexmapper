@@ -6,12 +6,14 @@ use iced::{Container, Element, Length, Sandbox};
 
 use canvas::HexCanvas;
 
-use crate::hex::Hex;
+use crate::hex::{Hex, HexCoordinate};
 use save::SaveState;
+
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct AppState {
-  pub(crate) hexes: Vec<Hex>,
+  pub(crate) hexes: HashMap<HexCoordinate, Hex>,
 }
 
 impl Sandbox for AppState {

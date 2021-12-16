@@ -3,8 +3,10 @@ use iced::{mouse, Color, Rectangle, Vector};
 
 use crate::hex::{Hex, HexCoordinate};
 
+use std::collections::HashMap;
+
 pub struct HexCanvas<'a> {
-  pub hexes: &'a [Hex],
+  pub hexes: &'a HashMap<HexCoordinate, Hex>,
   pub selected: Option<HexCoordinate>,
 }
 
@@ -56,7 +58,7 @@ impl<'a> Program<()> for HexCanvas<'a> {
 
           let coord = HexCoordinate::new(q, r, s);
 
-          if self.hexes.iter().any(|h| h.coordinate == coord) {
+          if self.hexes.contains_key(&coord) {
             self.selected = Some(coord);
           } else {
             self.selected = None;
@@ -78,8 +80,8 @@ impl<'a> Program<()> for HexCanvas<'a> {
     let hex_radius = radius / 10.0;
 
     let hexes = Path::new(|builder| {
-      for hex in self.hexes {
-        let hex_center = center + hex.coordinate.as_vector() * hex_radius;
+      for coordinate in self.hexes.keys() {
+        let hex_center = center + coordinate.as_vector() * hex_radius;
 
         let mut vertices = (0..6).into_iter().map(|i| {
           let (sin, cos) = f32::sin_cos(i as f32 * std::f32::consts::FRAC_PI_3);
