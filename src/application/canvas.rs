@@ -42,25 +42,19 @@ impl<'a> Program<()> for HexCanvas<'a> {
           let r_d = f32::abs(r_i - r);
           let s_d = f32::abs(s_i - s);
 
-          let coord = if q_d > r_d && q_d > s_d {
-            HexCoordinate {
-              q: (-r_i - s_i) as i64,
-              r: r_i as i64,
-              s: s_i as i64,
-            }
+          let mut q = q_i as i64;
+          let mut r = r_i as i64;
+          let mut s = s_i as i64;
+
+          if q_d > r_d && q_d > s_d {
+            q = 0 - r - s;
           } else if r_d > s_d {
-            HexCoordinate {
-              q: q_i as i64,
-              r: (-q_i - s_i) as i64,
-              s: s_i as i64,
-            }
+            r = 0 - q - s;
           } else {
-            HexCoordinate {
-              q: q_i as i64,
-              r: r_i as i64,
-              s: (-q_i - r_i) as i64,
-            }
-          };
+            s = 0 - q - r;
+          }
+
+          let coord = HexCoordinate::new(q, r, s);
 
           if self.hexes.iter().any(|h| h.coordinate == coord) {
             self.selected = Some(coord);
@@ -85,12 +79,7 @@ impl<'a> Program<()> for HexCanvas<'a> {
 
     let hexes = Path::new(|builder| {
       for hex in self.hexes {
-        let HexCoordinate { q, r, .. } = hex.coordinate;
-        let hex_center = center
-          + Vector {
-            x: hex_radius * 1.5 * q as f32,
-            y: hex_radius * (f32::sqrt(3.0) / 2.0 * q as f32 + f32::sqrt(3.0) * r as f32),
-          };
+        let hex_center = center + hex.coordinate.as_vector() * hex_radius;
 
         let mut vertices = (0..6).into_iter().map(|i| {
           let (sin, cos) = f32::sin_cos(i as f32 * std::f32::consts::FRAC_PI_3);
@@ -126,12 +115,7 @@ impl<'a> Program<()> for HexCanvas<'a> {
       };
 
       let path = Path::new(|builder| {
-        let HexCoordinate { q, r, .. } = coord;
-        let hex_center = center
-          + Vector {
-            x: hex_radius * 1.5 * q as f32,
-            y: hex_radius * (f32::sqrt(3.0) / 2.0 * q as f32 + f32::sqrt(3.0) * r as f32),
-          };
+        let hex_center = center + coord.as_vector() * hex_radius;
 
         let mut vertices = (0..6).into_iter().map(|i| {
           let (sin, cos) = f32::sin_cos(i as f32 * std::f32::consts::FRAC_PI_3);
