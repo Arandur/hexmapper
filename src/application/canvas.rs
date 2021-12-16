@@ -1,9 +1,23 @@
-use iced::canvas::{event, Cache, Cursor, Event, Geometry, Path, Program, Stroke};
+use iced::canvas::{self, event, Cursor, Event, Geometry, Path, Program, Stroke};
 use iced::{mouse, Color, Rectangle, Vector};
 
 use crate::hex::{Hex, HexCoordinate};
 
 use std::collections::HashMap;
+
+struct Cache {
+  hex_outlines: canvas::Cache,
+  selected_hex_outline: canvas::Cache,
+}
+
+impl Cache {
+  fn new() -> Cache {
+    Cache {
+      hex_outlines: canvas::Cache::new(),
+      selected_hex_outline: canvas::Cache::new(),
+    }
+  }
+}
 
 pub struct HexCanvas<'a> {
   hexes: &'a HashMap<HexCoordinate, Hex>,
@@ -71,11 +85,10 @@ impl<'a> Program<()> for HexCanvas<'a> {
 
           if self.hexes.contains_key(&coord) {
             self.selected = Some(coord);
+            self.cache.selected_hex_outline.clear();
           } else {
             self.selected = None;
           }
-
-          self.cache.clear();
         }
 
         (event::Status::Captured, None)
@@ -85,12 +98,11 @@ impl<'a> Program<()> for HexCanvas<'a> {
   }
 
   fn draw(&self, bounds: Rectangle, _cursor: Cursor) -> Vec<Geometry> {
-    vec![self.cache.draw(bounds.size(), |frame| {
-      let center = frame.center();
-      let radius = frame.width().min(frame.height()) / 2.0;
+    let center = bounds.center();
+    let radius = f32::min(bounds.width, bounds.height) / 2.0;
+    let hex_radius = radius / 10.0;
 
-      let hex_radius = radius / 10.0;
-
+    let hex_outlines = self.cache.hex_outlines.draw(bounds.size(), |frame| {
       let hexes = Path::new(|builder| {
         for coordinate in self.hexes.keys() {
           let hex_center = center + coordinate.as_vector() * hex_radius;
@@ -121,37 +133,44 @@ impl<'a> Program<()> for HexCanvas<'a> {
       };
 
       frame.stroke(&hexes, hex_stroke);
+    });
 
-      if let Some(coord) = self.selected {
-        let selected_hex_stroke = Stroke {
-          color: Color::new(1.0, 0.0, 0.0, 1.0),
-          ..Default::default()
-        };
+    let selected_hex_outline = self
+      .cache
+      .selected_hex_outline
+      .draw(bounds.size(), |frame| {
+        if let Some(coord) = self.selected {
+          let selected_hex_stroke = Stroke {
+            color: Color::new(1.0, 0.0, 0.0, 1.0),
+            ..Default::default()
+          };
 
-        let path = Path::new(|builder| {
-          let hex_center = center + coord.as_vector() * hex_radius;
+          let path = Path::new(|builder| {
+            let hex_center = center + coord.as_vector() * hex_radius;
 
-          let mut vertices = (0..6).into_iter().map(|i| {
-            let (sin, cos) = f32::sin_cos(i as f32 * std::f32::consts::FRAC_PI_3);
+            let mut vertices = (0..6).into_iter().map(|i| {
+              let (sin, cos) = f32::sin_cos(i as f32 * std::f32::consts::FRAC_PI_3);
 
-            hex_center
-              + Vector {
-                x: hex_radius * cos,
-                y: hex_radius * sin,
-              }
+              hex_center
+                + Vector {
+                  x: hex_radius * cos,
+                  y: hex_radius * sin,
+                }
+            });
+
+            builder.move_to(vertices.next().unwrap());
+
+            for vertex in vertices {
+              builder.line_to(vertex);
+            }
+
+            builder.close();
           });
 
-          builder.move_to(vertices.next().unwrap());
+          frame.stroke(&path, selected_hex_stroke);
+        }
+      });
 
-          for vertex in vertices {
-            builder.line_to(vertex);
-          }
-
-          builder.close();
-        });
-
-        frame.stroke(&path, selected_hex_stroke);
-      }
-    })]
+    vec![hex_outlines, selected_hex_outline]
   }
 }
