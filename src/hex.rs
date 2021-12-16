@@ -1,12 +1,16 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use iced::{Point, Vector};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+use std::collections::HashMap;
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Hex {
   pub coordinate: HexCoordinate,
-  terrain: String,
-  difficulty: String,
+
+  #[serde(flatten)]
+  pub data: HashMap<String, Value>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
