@@ -1105,6 +1105,7 @@ dependencies = [
 name = "hexmapper"
 version = "0.1.0"
 dependencies = [
+ "euclid",
  "iced",
  "serde",
  "serde_json",
